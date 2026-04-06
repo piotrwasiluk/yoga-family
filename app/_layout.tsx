@@ -1,7 +1,9 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import * as Notifications from "expo-notifications";
 import { useAuthStore } from "@/stores/authStore";
+import { registerForPushNotifications } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import "@/lib/i18n";
 import "../global.css";
@@ -16,6 +18,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const setSession = useAuthStore((s) => s.setSession);
   const setProfile = useAuthStore((s) => s.setProfile);
   const setLoading = useAuthStore((s) => s.setLoading);
+  const notificationListenerRef = useRef<Notifications.EventSubscription | null>(null);
 
   useEffect(() => {
     const {
@@ -31,6 +34,9 @@ function AuthGate({ children }: { children: React.ReactNode }) {
           .single();
 
         setProfile(data);
+
+        // Register for push notifications after login
+        registerForPushNotifications(newSession.user.id);
       } else {
         setProfile(null);
       }
@@ -42,6 +48,23 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       subscription.unsubscribe();
     };
   }, [setSession, setProfile, setLoading]);
+
+  // Handle notification taps
+  useEffect(() => {
+    notificationListenerRef.current =
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        const data = response.notification.request.content.data;
+        if (data?.screen === "checkin") {
+          router.push("/checkin");
+        }
+      });
+
+    return () => {
+      if (notificationListenerRef.current) {
+        notificationListenerRef.current.remove();
+      }
+    };
+  }, [router]);
 
   useEffect(() => {
     if (loading) return;

@@ -5,6 +5,14 @@ import GroupScreen from "./group";
 jest.mock("expo-router");
 jest.mock("@/lib/supabase");
 
+jest.mock("@/stores/authStore", () => ({
+  useAuthStore: jest.fn((selector) =>
+    selector({
+      session: { user: { id: "user-1" } },
+    }),
+  ),
+}));
+
 jest.mock("@/stores/groupStore", () => ({
   useGroupStore: jest.fn((selector) =>
     selector({
@@ -31,6 +39,11 @@ jest.mock("@/stores/groupStore", () => ({
           },
         },
       ],
+      loading: false,
+      error: null,
+      joinGroupByCode: jest.fn(),
+      createGroup: jest.fn(),
+      fetchMembers: jest.fn(),
     }),
   ),
 }));
