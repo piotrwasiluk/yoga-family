@@ -1,5 +1,5 @@
 import { useGroupStore } from "./groupStore";
-import type { Group, GroupMemberWithProfile } from "@/lib/types";
+import type { Group, GroupMemberWithProfile, Streak, Checkin } from "@/lib/types";
 
 jest.mock("@/lib/supabase", () => ({
   supabase: {
@@ -7,7 +7,11 @@ jest.mock("@/lib/supabase", () => ({
       select: jest.fn().mockReturnThis(),
       insert: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
+      gte: jest.fn().mockReturnThis(),
+      order: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
       single: jest.fn().mockResolvedValue({ data: null, error: null }),
+      maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
     }),
   },
 }));
@@ -35,11 +39,31 @@ const mockMember: GroupMemberWithProfile = {
   },
 };
 
+const mockStreak: Streak = {
+  user_id: "user-1",
+  group_id: "group-1",
+  current_streak: 5,
+  longest_streak: 10,
+  last_checkin_date: "2024-01-05",
+};
+
+const mockCheckin: Checkin = {
+  id: "checkin-1",
+  user_id: "user-1",
+  group_id: "group-1",
+  checked_in_at: "2024-01-01T10:00:00Z",
+  feeling: "great",
+  notes: null,
+  date: "2024-01-01",
+};
+
 describe("groupStore", () => {
   beforeEach(() => {
     useGroupStore.setState({
       currentGroup: null,
       members: [],
+      streak: null,
+      weeklyCheckins: [],
       loading: false,
       error: null,
     });
@@ -49,6 +73,8 @@ describe("groupStore", () => {
     const state = useGroupStore.getState();
     expect(state.currentGroup).toBeNull();
     expect(state.members).toEqual([]);
+    expect(state.streak).toBeNull();
+    expect(state.weeklyCheckins).toEqual([]);
     expect(state.loading).toBe(false);
     expect(state.error).toBeNull();
   });
@@ -81,5 +107,17 @@ describe("groupStore", () => {
     const state = useGroupStore.getState();
     expect(state.currentGroup).toBeNull();
     expect(state.members).toEqual([]);
+    expect(state.streak).toBeNull();
+    expect(state.weeklyCheckins).toEqual([]);
+  });
+
+  it("should store streak data", () => {
+    useGroupStore.setState({ streak: mockStreak });
+    expect(useGroupStore.getState().streak).toEqual(mockStreak);
+  });
+
+  it("should store weekly checkins", () => {
+    useGroupStore.setState({ weeklyCheckins: [mockCheckin] });
+    expect(useGroupStore.getState().weeklyCheckins).toEqual([mockCheckin]);
   });
 });

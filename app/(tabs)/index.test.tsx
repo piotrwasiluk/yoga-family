@@ -2,7 +2,30 @@ import React from "react";
 import { render } from "@testing-library/react-native";
 import HomeScreen from "./index";
 
-jest.mock("expo-router");
+jest.mock("react-native-reanimated", () => {
+  const { View } = require("react-native");
+  return {
+    __esModule: true,
+    default: {
+      View,
+      createAnimatedComponent: (component: unknown) => component,
+    },
+    useSharedValue: (val: unknown) => ({ value: val }),
+    useAnimatedStyle: () => ({}),
+    withTiming: (value: unknown) => value,
+    withRepeat: (value: unknown) => value,
+    withSequence: (...args: unknown[]) => args[0],
+    Easing: {
+      inOut: (fn: unknown) => fn,
+      ease: 0,
+    },
+  };
+});
+
+jest.mock("expo-router", () => ({
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
+}));
+
 jest.mock("@/lib/supabase", () => ({
   supabase: {
     channel: jest.fn().mockReturnValue({
@@ -33,8 +56,12 @@ jest.mock("@/stores/groupStore", () => ({
     selector({
       currentGroup: null,
       members: [],
+      streak: null,
+      weeklyCheckins: [],
       fetchGroup: jest.fn(),
       fetchMembers: jest.fn(),
+      fetchStreak: jest.fn(),
+      fetchWeeklyCheckins: jest.fn(),
     }),
   ),
 }));

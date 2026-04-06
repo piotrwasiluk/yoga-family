@@ -26,6 +26,7 @@ module.exports = [
       "tailwind.config.js",
       "jest.config.js",
       "eslint.config.js",
+      "supabase/functions/",
     ],
   },
 ];

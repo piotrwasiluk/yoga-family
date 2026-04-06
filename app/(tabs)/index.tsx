@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
 import { StreakCard } from "@/components/StreakCard";
 import { MemberPill } from "@/components/MemberPill";
+import { WeeklyHeatmap } from "@/components/WeeklyHeatmap";
 import { useAuthStore } from "@/stores/authStore";
 import { useGroupStore } from "@/stores/groupStore";
 import { useCheckinStore } from "@/stores/checkinStore";
@@ -20,8 +21,12 @@ export default function HomeScreen() {
   const session = useAuthStore((s) => s.session);
   const currentGroup = useGroupStore((s) => s.currentGroup);
   const members = useGroupStore((s) => s.members);
+  const streak = useGroupStore((s) => s.streak);
+  const weeklyCheckins = useGroupStore((s) => s.weeklyCheckins);
   const fetchGroup = useGroupStore((s) => s.fetchGroup);
   const fetchMembers = useGroupStore((s) => s.fetchMembers);
+  const fetchStreak = useGroupStore((s) => s.fetchStreak);
+  const fetchWeeklyCheckins = useGroupStore((s) => s.fetchWeeklyCheckins);
   const fetchTodayCheckins = useCheckinStore((s) => s.fetchTodayCheckins);
   const addCheckin = useCheckinStore((s) => s.addCheckin);
   const hasUserCheckedIn = useCheckinStore((s) => s.hasUserCheckedIn);
@@ -35,11 +40,13 @@ export default function HomeScreen() {
   }, [session?.user?.id, fetchGroup]);
 
   useEffect(() => {
-    if (currentGroup?.id) {
+    if (currentGroup?.id && session?.user?.id) {
       fetchMembers(currentGroup.id);
       fetchTodayCheckins(currentGroup.id);
+      fetchStreak(session.user.id, currentGroup.id);
+      fetchWeeklyCheckins(currentGroup.id);
     }
-  }, [currentGroup?.id, fetchMembers, fetchTodayCheckins]);
+  }, [currentGroup?.id, session?.user?.id, fetchMembers, fetchTodayCheckins, fetchStreak, fetchWeeklyCheckins]);
 
   // Realtime subscription for check-ins
   useEffect(() => {
@@ -77,7 +84,10 @@ export default function HomeScreen() {
           {t("home.greeting", { name: profile?.display_name ?? "" })}
         </Text>
 
-        <StreakCard currentStreak={0} longestStreak={0} />
+        <StreakCard
+          currentStreak={streak?.current_streak ?? 0}
+          longestStreak={streak?.longest_streak ?? 0}
+        />
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("home.todayStatus")}</Text>
@@ -96,6 +106,10 @@ export default function HomeScreen() {
             <Text style={styles.emptyText}>{t("home.noneCompleted")}</Text>
           )}
         </View>
+
+        {members.length > 0 && (
+          <WeeklyHeatmap members={members} checkins={weeklyCheckins} />
+        )}
 
         {!userCheckedIn && (
           <Button label={t("home.markDone")} onPress={handleCheckin} />

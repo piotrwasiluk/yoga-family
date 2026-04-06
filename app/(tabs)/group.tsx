@@ -1,5 +1,5 @@
-import React, { useCallback } from "react";
-import { View, Text, ScrollView, StyleSheet, Share } from "react-native";
+import React, { useCallback, useState } from "react";
+import { View, Text, ScrollView, TextInput, StyleSheet, Share } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
@@ -8,13 +8,22 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { useGroupStore } from "@/stores/groupStore";
 import { useCheckinStore } from "@/stores/checkinStore";
-import { colors, spacing } from "@/lib/constants";
+import { useAuthStore } from "@/stores/authStore";
+import { colors, spacing, borderRadius } from "@/lib/constants";
 
 export default function GroupScreen() {
   const { t } = useTranslation();
+  const session = useAuthStore((s) => s.session);
   const currentGroup = useGroupStore((s) => s.currentGroup);
   const members = useGroupStore((s) => s.members);
+  const loading = useGroupStore((s) => s.loading);
+  const error = useGroupStore((s) => s.error);
+  const joinGroupByCode = useGroupStore((s) => s.joinGroupByCode);
+  const createGroup = useGroupStore((s) => s.createGroup);
   const hasUserCheckedIn = useCheckinStore((s) => s.hasUserCheckedIn);
+
+  const [inviteCode, setInviteCode] = useState("");
+  const [groupName, setGroupName] = useState("");
 
   const handleShareInvite = useCallback(async () => {
     if (!currentGroup?.invite_code) return;
@@ -24,12 +33,66 @@ export default function GroupScreen() {
     });
   }, [currentGroup?.invite_code]);
 
+  const handleJoinGroup = useCallback(async () => {
+    if (!inviteCode.trim() || !session?.user?.id) return;
+    const success = await joinGroupByCode(session.user.id, inviteCode.trim());
+    if (success) {
+      setInviteCode("");
+    }
+  }, [inviteCode, session?.user?.id, joinGroupByCode]);
+
+  const handleCreateGroup = useCallback(async () => {
+    if (!groupName.trim() || !session?.user?.id) return;
+    const success = await createGroup(session.user.id, groupName.trim());
+    if (success) {
+      setGroupName("");
+    }
+  }, [groupName, session?.user?.id, createGroup]);
+
+  // Join/Create flow when no group
   if (!currentGroup) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>{t("group.noGroup")}</Text>
-        </View>
+        <ScrollView contentContainerStyle={styles.joinContent}>
+          <Text style={styles.joinTitle}>{t("group.noGroupYet")}</Text>
+
+          <Card style={styles.joinCard}>
+            <Text style={styles.joinCardTitle}>{t("group.joinByCode")}</Text>
+            <TextInput
+              style={styles.input}
+              value={inviteCode}
+              onChangeText={setInviteCode}
+              placeholder={t("group.enterCode")}
+              placeholderTextColor={colors.textSecondary}
+              autoCapitalize="none"
+            />
+            <Button
+              label={loading ? t("common.loading") : t("group.join")}
+              onPress={handleJoinGroup}
+              disabled={!inviteCode.trim() || loading}
+            />
+          </Card>
+
+          <Text style={styles.orText}>{t("group.orCreateNew")}</Text>
+
+          <Card style={styles.joinCard}>
+            <Text style={styles.joinCardTitle}>{t("group.createGroup")}</Text>
+            <TextInput
+              style={styles.input}
+              value={groupName}
+              onChangeText={setGroupName}
+              placeholder={t("group.enterGroupName")}
+              placeholderTextColor={colors.textSecondary}
+            />
+            <Button
+              label={loading ? t("common.loading") : t("group.create")}
+              onPress={handleCreateGroup}
+              disabled={!groupName.trim() || loading}
+            />
+          </Card>
+
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -78,7 +141,7 @@ export default function GroupScreen() {
 
         <Card style={styles.inviteCard}>
           <Text style={styles.inviteLabel}>{t("group.inviteCode")}</Text>
-          <Text style={styles.inviteCode}>{currentGroup.invite_code}</Text>
+          <Text style={styles.inviteCodeText}>{currentGroup.invite_code}</Text>
         </Card>
       </ScrollView>
     </SafeAreaView>
@@ -137,19 +200,49 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
   },
-  inviteCode: {
+  inviteCodeText: {
     fontSize: 24,
     fontWeight: "700",
     color: colors.primary,
     letterSpacing: 4,
   },
-  emptyContainer: {
-    flex: 1,
+  // Join/Create styles
+  joinContent: {
+    padding: spacing.lg,
+    gap: spacing.lg,
     justifyContent: "center",
-    alignItems: "center",
+    flexGrow: 1,
   },
-  emptyText: {
+  joinTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: colors.text,
+    textAlign: "center",
+  },
+  joinCard: {
+    gap: spacing.md,
+  },
+  joinCardTitle: {
     fontSize: 16,
+    fontWeight: "600",
+    color: colors.text,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.sm,
+    padding: spacing.md,
+    fontSize: 16,
+    color: colors.text,
+  },
+  orText: {
+    fontSize: 14,
     color: colors.textSecondary,
+    textAlign: "center",
+  },
+  errorText: {
+    fontSize: 14,
+    color: colors.feeling.sore,
+    textAlign: "center",
   },
 });
