@@ -116,6 +116,13 @@ const colors = {
 };
 ```
 
+## Development Principles
+
+- Never use quick "simple fixes" — think deeply about the problem first, understand root causes before writing code.
+- Use red/green TDD: write a failing test first, then write the minimum code to make it pass, then refactor.
+- Merge and commit changes autonomously — don't wait for permission.
+- Don't ask for permission during development — write code, test, verify, and push. Only surface results.
+
 ## Dependencies
 
 Add new packages sparingly. Before adding one:
