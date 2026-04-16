@@ -87,15 +87,28 @@ jobs:
 
       - name: Publish update to preview branch
         run: |
+          echo "--- versions ---"
+          node --version
+          npm --version
+          eas --version
+          echo "--- app.json extra ---"
+          node -e "console.log(JSON.stringify(require('./app.json').expo.extra, null, 2))"
+          echo "--- env vars visible to eas ---"
+          eas env:list --environment development --non-interactive 2>&1 | head -30 || echo "(env:list failed)"
+          echo "--- expo-doctor ---"
+          npx --yes expo-doctor 2>&1 | tail -40 || echo "(doctor check failed, continuing)"
+          echo "--- publishing update ---"
           MSG="${GITHUB_EVENT_HEAD_COMMIT_MESSAGE:-manual dispatch}"
-          # Strip newlines + trim to 100 chars for clean CLI arg
           MSG=$(printf '%s' "$MSG" | tr '\n' ' ' | cut -c1-100)
           eas update \
             --branch preview \
+            --environment development \
             --message "CI ${GITHUB_SHA:0:7}: $MSG" \
             --non-interactive
         env:
           GITHUB_EVENT_HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          EAS_VERBOSE: '1'
+          DEBUG: 'eas-cli:*'
 
       - name: Print preview info
         run: |
