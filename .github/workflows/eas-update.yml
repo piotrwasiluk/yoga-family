@@ -43,13 +43,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
       - name: Setup EAS CLI
         uses: expo/expo-github-action@v8
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Verify EAS auth
+        run: |
+          echo "Authenticated as: $(eas whoami)"
 
       - name: Install dependencies
         run: npm ci
@@ -64,13 +67,16 @@ jobs:
           else
             echo "No projectId in app.json — running eas init"
             eas init --non-interactive --force
-            # eas update:configure writes updates.url + runtimeVersion if missing
+            echo "Configuring EAS Updates"
             eas update:configure --non-interactive || true
             echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Resulting app.json:"
+            cat app.json
           fi
 
       - name: Commit project linkage back to repo
         if: steps.init.outputs.changed == 'true'
+        continue-on-error: true
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -79,14 +85,17 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "chore(eas): link project for updates [skip ci]"
-            git push origin HEAD:${GITHUB_REF#refs/heads/}
+            git push origin HEAD:${GITHUB_REF#refs/heads/} || echo "::warning::Could not push project linkage. Not fatal — update will still publish."
           fi
 
       - name: Publish update to preview branch
         run: |
+          MSG="${GITHUB_EVENT_HEAD_COMMIT_MESSAGE:-manual dispatch}"
+          # Strip newlines + trim to 100 chars for clean CLI arg
+          MSG=$(printf '%s' "$MSG" | tr '\n' ' ' | cut -c1-100)
           eas update \
             --branch preview \
-            --message "CI ${GITHUB_SHA:0:7}: ${GITHUB_EVENT_HEAD_COMMIT_MESSAGE:-manual dispatch}" \
+            --message "CI ${GITHUB_SHA:0:7}: $MSG" \
             --non-interactive
         env:
           GITHUB_EVENT_HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
