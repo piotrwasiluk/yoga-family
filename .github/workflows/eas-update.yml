@@ -94,7 +94,7 @@ jobs:
           echo "--- app.json extra ---"
           node -e "console.log(JSON.stringify(require('./app.json').expo.extra, null, 2))"
           echo "--- env vars visible to eas ---"
-          eas env:list --environment development --non-interactive 2>&1 | head -30 || echo "(env:list failed)"
+          eas env:list --environment development 2>&1 | head -30 || echo "(env:list failed)"
           echo "--- expo-doctor ---"
           npx --yes expo-doctor 2>&1 | tail -40 || echo "(doctor check failed, continuing)"
           echo "--- publishing update ---"
