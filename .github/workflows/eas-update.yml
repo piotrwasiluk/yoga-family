@@ -9,7 +9,7 @@ on:
   push:
     branches:
       - main
-      - claude/iphone-app-setup-I5XVQ
+      - 'claude/**'
 
 concurrency:
   group: eas-update-${{ github.ref }}
