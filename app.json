@@ -9,6 +9,7 @@
     "scheme": "flextrack",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "platforms": ["ios", "android"],
     "runtimeVersion": {
       "policy": "sdkVersion"
     },
