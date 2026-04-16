@@ -67,7 +67,15 @@ export default function LoginScreen() {
 
           {error && <Text style={styles.error}>{error}</Text>}
 
-          <Button label={t("auth.login")} onPress={handleLogin} loading={loading} testID="login-button" />
+          <Button
+            label={t("auth.login")}
+            onPress={handleLogin}
+            loading={loading}
+            disabled={!email.trim() || !password.trim()}
+            fullWidth
+            style={styles.submitButton}
+            testID="login-button"
+          />
         </View>
 
         <View style={styles.footer}>
@@ -123,6 +131,9 @@ const styles = StyleSheet.create({
     color: colors.feeling.sore,
     fontSize: 14,
     textAlign: "center",
+  },
+  submitButton: {
+    marginTop: spacing.sm,
   },
   footer: {
     flexDirection: "row",

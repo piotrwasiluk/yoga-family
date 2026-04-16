@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, Text, ActivityIndicator, StyleSheet } from "react-native";
+import { Pressable, Text, ActivityIndicator, StyleSheet, StyleProp, ViewStyle } from "react-native";
 import { colors, borderRadius, spacing } from "@/lib/constants";
 
 interface ButtonProps {
@@ -8,10 +8,21 @@ interface ButtonProps {
   variant?: "primary" | "secondary" | "outline";
   disabled?: boolean;
   loading?: boolean;
+  fullWidth?: boolean;
+  style?: StyleProp<ViewStyle>;
   testID?: string;
 }
 
-export function Button({ label, onPress, variant = "primary", disabled = false, loading = false, testID }: ButtonProps) {
+export function Button({
+  label,
+  onPress,
+  variant = "primary",
+  disabled = false,
+  loading = false,
+  fullWidth = false,
+  style,
+  testID,
+}: ButtonProps) {
   const isDisabled = disabled || loading;
 
   return (
@@ -21,8 +32,10 @@ export function Button({ label, onPress, variant = "primary", disabled = false, 
       style={({ pressed }) => [
         styles.base,
         styles[variant],
+        fullWidth && styles.fullWidth,
         isDisabled && styles.disabled,
         pressed && !isDisabled && styles.pressed,
+        style,
       ]}
       testID={testID}
       accessibilityRole="button"
@@ -52,6 +65,10 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     alignItems: "center",
     justifyContent: "center",
+  },
+  fullWidth: {
+    alignSelf: "stretch",
+    width: "100%",
   },
   primary: {
     backgroundColor: colors.primary,

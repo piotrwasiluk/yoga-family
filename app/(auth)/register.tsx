@@ -78,7 +78,15 @@ export default function RegisterScreen() {
 
           {error && <Text style={styles.error}>{error}</Text>}
 
-          <Button label={t("auth.register")} onPress={handleRegister} loading={loading} testID="register-button" />
+          <Button
+            label={t("auth.register")}
+            onPress={handleRegister}
+            loading={loading}
+            disabled={!displayName.trim() || !email.trim() || !password.trim()}
+            fullWidth
+            style={styles.submitButton}
+            testID="register-button"
+          />
         </View>
 
         <View style={styles.footer}>
@@ -134,6 +142,9 @@ const styles = StyleSheet.create({
     color: colors.feeling.sore,
     fontSize: 14,
     textAlign: "center",
+  },
+  submitButton: {
+    marginTop: spacing.sm,
   },
   footer: {
     flexDirection: "row",
