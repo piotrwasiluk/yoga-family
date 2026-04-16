@@ -2,12 +2,17 @@
   "expo": {
     "name": "FlexTrack",
     "slug": "flextrack",
+    "owner": "yoga-family",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "flextrack",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "platforms": ["ios", "android"],
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -36,11 +41,19 @@
           "icon": "./assets/icon.png",
           "color": "#085041"
         }
-      ],
-      "expo-image"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cc023ab6-f76d-4ada-b097-528fd61b0124"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/cc023ab6-f76d-4ada-b097-528fd61b0124"
     }
   }
 }

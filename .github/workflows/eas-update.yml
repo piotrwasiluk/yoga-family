@@ -1,0 +1,127 @@
+name: EAS Update (Preview)
+
+# Publishes the JS bundle to Expo's CDN on the `preview` branch so anyone with
+# Expo Go can scan the QR at https://expo.dev/accounts/yoga-family/projects/flextrack/updates
+# and load the app on their phone.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - claude/iphone-app-setup-I5XVQ
+
+concurrency:
+  group: eas-update-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update:
+    name: Publish preview update
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - name: Check EXPO_TOKEN is set
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::EXPO_TOKEN secret is not set. Add it at: Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Verify EAS auth
+        run: |
+          echo "Authenticated as: $(eas whoami)"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Link or create Expo project (first run only)
+        id: init
+        run: |
+          set -e
+          if node -e "process.exit(require('./app.json').expo?.extra?.eas?.projectId ? 0 : 1)" 2>/dev/null; then
+            echo "Project already linked — skipping init"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "No projectId in app.json — running eas init"
+            eas init --non-interactive --force
+            echo "Configuring EAS Updates"
+            eas update:configure --non-interactive || true
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Resulting app.json:"
+            cat app.json
+          fi
+
+      - name: Commit project linkage back to repo
+        if: steps.init.outputs.changed == 'true'
+        continue-on-error: true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(eas): link project for updates [skip ci]"
+            git push origin HEAD:${GITHUB_REF#refs/heads/} || echo "::warning::Could not push project linkage. Not fatal — update will still publish."
+          fi
+
+      - name: Publish update to preview branch
+        run: |
+          echo "--- versions ---"
+          node --version
+          npm --version
+          eas --version
+          echo "--- app.json extra ---"
+          node -e "console.log(JSON.stringify(require('./app.json').expo.extra, null, 2))"
+          echo "--- env vars visible to eas ---"
+          eas env:list --environment development 2>&1 | head -30 || echo "(env:list failed)"
+          echo "--- expo-doctor ---"
+          npx --yes expo-doctor 2>&1 | tail -40 || echo "(doctor check failed, continuing)"
+          echo "--- publishing update ---"
+          MSG="${GITHUB_EVENT_HEAD_COMMIT_MESSAGE:-manual dispatch}"
+          MSG=$(printf '%s' "$MSG" | tr '\n' ' ' | cut -c1-100)
+          eas update \
+            --branch preview \
+            --environment development \
+            --message "CI ${GITHUB_SHA:0:7}: $MSG" \
+            --non-interactive
+        env:
+          GITHUB_EVENT_HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          EAS_VERBOSE: '1'
+          DEBUG: 'eas-cli:*'
+
+      - name: Print preview info
+        run: |
+          PROJECT_ID=$(node -p "require('./app.json').expo.extra.eas.projectId")
+          echo ""
+          echo "=================================================="
+          echo "Preview published!"
+          echo ""
+          echo "Project ID: $PROJECT_ID"
+          echo ""
+          echo "Open on your phone via Expo Go:"
+          echo "1. Open Expo Go and sign in to the yoga-family Expo account"
+          echo "2. Visit: https://expo.dev/accounts/yoga-family/projects/flextrack/updates"
+          echo "3. Click the latest update on the 'preview' branch"
+          echo "4. Scan the QR code shown there with your iPhone Camera app"
+          echo "=================================================="
