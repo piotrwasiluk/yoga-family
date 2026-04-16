@@ -2,12 +2,16 @@
   "expo": {
     "name": "FlexTrack",
     "slug": "flextrack",
+    "owner": "yoga-family",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "flextrack",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
